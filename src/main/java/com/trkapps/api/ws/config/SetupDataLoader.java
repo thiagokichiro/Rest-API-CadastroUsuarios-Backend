@@ -2,8 +2,10 @@ package com.trkapps.api.ws.config;
 
 import com.trkapps.api.ws.domain.Role;
 import com.trkapps.api.ws.domain.User;
+import com.trkapps.api.ws.domain.VerificationToken;
 import com.trkapps.api.ws.repository.RoleRepository;
 import com.trkapps.api.ws.repository.UserRepository;
+import com.trkapps.api.ws.repository.VerificationTokenRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Configuration;
@@ -25,11 +27,15 @@ public class SetupDataLoader implements ApplicationListener<ContextRefreshedEven
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private VerificationTokenRepository verificationTokenRepository;
+
     @Override
     public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
 
         userRepository.deleteAll();
         roleRepository.deleteAll();
+        verificationTokenRepository.deleteAll();
 
         Role roleAdmin = createRoleIfNotFound("ROLE_ADMIN");
         Role roleUser = createRoleIfNotFound("ROLE_USER");
