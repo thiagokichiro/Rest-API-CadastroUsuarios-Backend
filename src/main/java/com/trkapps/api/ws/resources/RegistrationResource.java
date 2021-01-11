@@ -1,6 +1,7 @@
 package com.trkapps.api.ws.resources;
 
 import com.trkapps.api.ws.domain.User;
+import com.trkapps.api.ws.domain.VerificationToken;
 import com.trkapps.api.ws.dto.UserDTO;
 import com.trkapps.api.ws.resources.util.GenericResponse;
 import com.trkapps.api.ws.services.UserService;
@@ -34,9 +35,39 @@ public class RegistrationResource {
 
     @GetMapping(value = "/resendRegistrationToken/users")
     public ResponseEntity<Void> resendRegistrationToken(@RequestParam("email") String email) {
-        this.userService.generateNewVerificationToken(email);
+        this.userService.generateNewVerificationToken(email, 0);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(value = "/resetPassword/users")
+    public ResponseEntity<Void> resetPassword(@RequestParam("email") String email) {
+        this.userService.generateNewVerificationToken(email, 1);
         return ResponseEntity.noContent().build();
 
+    }
+
+    @GetMapping(value = "/changePassword/users")
+    public ResponseEntity<GenericResponse> changePassword(@RequestParam("id") String idUser, @RequestParam("token") String token) {
+        final String result = userService.validatePasswordResetToken(idUser, token);
+        if (result == null) {
+            return ResponseEntity.ok().body(new GenericResponse("success"));
+        }
+        return ResponseEntity.status(HttpStatus.SEE_OTHER).body(new GenericResponse(result.toString()));
+    }
+
+    @PostMapping(value = "/savePassword/users")
+    public ResponseEntity<GenericResponse> savePassword(@RequestParam("token") String token, @RequestParam("password") String password) {
+        final Object result = this.userService.validateVerificationToken(token);
+
+        if (result != null) {
+            return ResponseEntity.status(HttpStatus.SEE_OTHER).body(new GenericResponse(result.toString()));
+        }
+
+        final VerificationToken verificationToken = userService.getVerificationTokenByToken(token);
+        if(verificationToken != null) {
+            userService.changePassword(verificationToken.getUser(), password);
+        }
+        return ResponseEntity.noContent().build();
     }
 
 }

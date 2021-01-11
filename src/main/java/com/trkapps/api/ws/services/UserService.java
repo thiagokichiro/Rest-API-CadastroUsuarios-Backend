@@ -69,7 +69,7 @@ public class UserService {
         user.setRoles(Arrays.asList(roleRepository.findByName("ROLE_USER").get()));
         user.setEnabled(false);
         user = create(user);
-        this.emailService.sendConfirmationHtmlEmail(user, null);
+        this.emailService.sendConfirmationHtmlEmail(user, null, 0);
         return user;
     }
 
@@ -111,13 +111,45 @@ public class UserService {
         return user.orElseThrow(() -> new ObjectNotFoundException(String.format("Usuário não encontrado")));
     }
 
-    public VerificationToken generateNewVerificationToken(String email) {
+    public VerificationToken generateNewVerificationToken(String email, int select) {
         User user = findByEmail(email);
+        VerificationToken newToken;
         Optional<VerificationToken> vToken = verificationTokenRepository.findByUser(user);
-        vToken.get().updateToken(UUID.randomUUID().toString());
-        VerificationToken updateVToken = verificationTokenRepository.save(vToken.get());
-        emailService.sendConfirmationHtmlEmail(user, updateVToken);
+
+        // Verifica se token é nulo ou não
+        if (vToken.isPresent()) {
+            vToken.get().updateToken(UUID.randomUUID().toString());
+            newToken = vToken.get();
+        } else {
+            final String token = UUID.randomUUID().toString();
+            newToken = new VerificationToken(token, user);
+        }
+
+        VerificationToken updateVToken = verificationTokenRepository.save(newToken);
+        emailService.sendConfirmationHtmlEmail(user, updateVToken, select);
         return updateVToken;
     }
 
+    public String validatePasswordResetToken(String idUser, String token) {
+        final Optional<VerificationToken> vToken = verificationTokenRepository.findByToken(token);
+        if (!vToken.isPresent() || !idUser.equals(vToken.get().getUser().getId())) {
+            return "invalidToken";
+        }
+
+        final Calendar cal = Calendar.getInstance();
+        if ((vToken.get().getExpiryDate().getTime() - cal.getTime().getTime()) < -0) {
+            return "expired";
+        }
+        return null;
+    }
+
+    public VerificationToken getVerificationTokenByToken(String token) {
+        return verificationTokenRepository.findByToken(token)
+                .orElseThrow(() -> new ObjectNotFoundException(String.format("token não encontrado")));
+    }
+
+    public void changePassword(User user, String password) {
+        user.setPassword(passwordEncoder.encode(password));
+        userRepository.save(user);
+    }
 }

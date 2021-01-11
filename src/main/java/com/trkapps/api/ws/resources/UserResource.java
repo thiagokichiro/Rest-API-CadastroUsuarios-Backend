@@ -4,6 +4,9 @@ import com.trkapps.api.ws.domain.Role;
 import com.trkapps.api.ws.dto.UserDTO;
 import com.trkapps.api.ws.services.UserService;
 import com.trkapps.api.ws.domain.User;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
@@ -12,7 +15,6 @@ import org.springframework.security.oauth2.provider.token.TokenStore;
 import org.springframework.security.oauth2.provider.token.store.InMemoryTokenStore;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import java.security.Principal;
 import java.util.List;
@@ -20,6 +22,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
+@Api(description = "Endpoints para criar, retornar, atualizar e deletar usuários.")
 public class UserResource {
 
     @Autowired
@@ -38,7 +41,8 @@ public class UserResource {
     }
 
     @GetMapping("/users/{id}")
-    public ResponseEntity<UserDTO> findById(@PathVariable String id) {
+    @ApiOperation("Retorna um especifico usuário através do seu identificador.")
+    public ResponseEntity<UserDTO> findById(@ApiParam("Id do usuário. Não pode ser vazio") @PathVariable String id) {
         User user = userService.findById(id);
         return ResponseEntity.ok().body(new UserDTO(user));
     }
@@ -63,14 +67,14 @@ public class UserResource {
     }
 
     @GetMapping("/users/{id}/roles")
-    public ResponseEntity<List<Role>> findRoles(@PathVariable String id) {
+    public ResponseEntity<List<Role>> findRoles(@PathVariable String id ){
         User user = userService.findById(id);
 
         return ResponseEntity.ok().body(user.getRoles());
     }
 
-    @GetMapping(value = "/users/main")
-    public ResponseEntity<UserDTO> getUserMain(Principal principal) {
+    @GetMapping(value="/users/main")
+    public ResponseEntity<UserDTO> getUserMain(Principal principal){
         User user = this.userService.findByEmail(principal.getName());
         UserDTO userDTO = new UserDTO(user);
         userDTO.setPassword("");
